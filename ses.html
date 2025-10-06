@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>El Hareketi ile Ses Kontrol</title>
+    <link rel="stylesheet" href="ses.css" />
+</head>
+
+<body>
+    <button id="themeToggle" class="theme-toggle">Night Mode</button>
+    <main class="container">
+        <h1>El Hareketi ile Ses Kontrol</h1>
+
+        <!-- Açılışta şarkı seçimi (modern grid) -->
+        <div id="songModal" class="modal-overlay" hidden>
+            <div class="modal modern">
+                <div class="modal-header">
+                    <h3>Hangi şarkıyı istiyorsun?</h3>
+                    <p class="muted">Birini seç veya alttan dosya yükle.</p>
+                </div>
+                <div class="preset-grid">
+                    <button class="btn-preset preset-card" data-preset="ROTA"><span class="icon">🎧</span><span class="preset-title">ROTA</span></button>
+                    <button class="btn-preset preset-card" data-preset="MERMER"><span class="icon">🎵</span><span class="preset-title">MERMER</span></button>
+                    <button class="btn-preset preset-card" data-preset="TAK3"><span class="icon">🥁</span><span class="preset-title">TAK TAK TAK</span></button>
+                    <button class="btn-preset preset-card" data-preset="SNAP"><span class="icon">⚡</span><span class="preset-title">SNAP</span></button>
+                    <button class="btn-preset preset-card" data-preset="LUTHER"><span class="icon">🎶</span><span class="preset-title">LUTHER</span></button>
+                    <button class="btn-preset preset-card" data-preset="SPRINTER"><span class="icon">🏃</span><span class="preset-title">SPRINTER</span></button>
+                    <button class="btn-preset preset-card" data-preset="DUNYA_FANI"><span class="icon">🌍</span><span class="preset-title">DÜNYA FANİ</span></button>
+                    <button class="btn-preset preset-card" data-preset="ESPRESSO"><span class="icon">☕</span><span class="preset-title">ESPRESSO</span></button>
+                </div>
+            </div>
+        </div>
+
+        <section class="controls">
+            <button id="startBtn">Kamerayı Başlat</button>
+            <span id="bridgeStatus" class="badge" hidden>Köprü: Yok</span>
+            <span id="modeStatus" class="badge" hidden>Mod: Sayfa Sesi</span>
+        </section>
+
+        <section class="video-wrap mirror-fix">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="overlay"></canvas>
+        </section>
+
+        <section class="hud">
+            <div class="bar pin-left">
+                <div id="volFill" class="fill" style="height: 0%"></div>
+            </div>
+            <div class="bar pin-right">
+                <div id="beatFill" class="fill beat" style="height: 0%"></div>
+            </div>
+            <div class="meta">
+                <span id="volText">Ana Ses: 0%</span>
+                <span id="beatText">Beat: 0%</span>
+            </div>
+            <div class="tips" hidden>
+                <p>
+                    Başparmak ucu ile işaret parmağı ucunun mesafesi sesi belirler.<br />
+                    c: MIN, v: MAX, q: çıkış (tarayıcıda q yalnızca sayfa sesine etkisiz).<br />
+                    Sistem sesini kontrol etmek için aşağıdaki "Köprü" bölümüne bak.
+                </p>
+            </div>
+        </section>
+
+        <section class="audio">
+            <audio id="testAudio" controls loop>
+                <source src="music/rota-vocal.mp3" type="audio/mpeg" />
+                Tarayıcınız audio elementini desteklemiyor.
+            </audio>
+            <div class="local-audio" id="singlePickerWrap">
+                <input id="fileInput" type="file" accept="audio/*" multiple hidden />
+                <span id="fileName" class="file-name" title="Dosya seçmek için tıkla">Seçilmedi</span>
+            </div>
+            <div class="chosen-tags">
+                <span id="mainTag" class="chip">-</span>
+                <span id="beatTag" class="chip">-</span>
+            </div>
+            <hr />
+            <audio id="beatAudio" controls loop>
+                <source src="music/rota-beat.mp3" type="audio/mpeg" />
+            </audio>
+            <div class="both-controls" id="bothControls" hidden>
+                <button id="playBothBtn" disabled>Sesleri Başlat</button>
+                <span id="bothHint" class="note">Önce iki dosyayı da seçin.</span>
+            </div>
+            <p class="note" hidden>Not: Köprü yoksa yalnızca bu sayfa içindeki sesin (audio) seviyesi değişir.</p>
+        </section>
+
+        <section class="yt" hidden>
+            <h2>YouTube Şarkı Yükle (Resmî video önerilir)</h2>
+            <div class="yt-controls">
+                <input id="ytUrlInput" type="url"
+                    placeholder="YouTube video URL (ör: https://www.youtube.com/watch?v=...)" />
+                <button id="ytLoadBtn">Yükle</button>
+            </div>
+            <div id="ytWrap" class="yt-wrap" hidden>
+                <div id="ytPlayer"></div>
+            </div>
+            <p class="note">Telif nedeniyle doğrudan dosya eklemiyoruz. Resmî YouTube bağlantısı ekleyin veya kendi
+                dosyanızı <code>&lt;audio&gt;</code> ile çalın.</p>
+        </section>
+
+        <section class="bridge" hidden>
+            <h2>Sistem Sesi Köprüsü (İsteğe bağlı)</h2>
+            <ol>
+                <li>Python kurulu olmalı (3.9+).</li>
+                <li>Gerekli paketler: <code>pip install opencv-python mediapipe numpy</code> (bu sayfa için değil,
+                    sadece önceki örnek içindi). Köprü için paket gerekmez.</li>
+                <li><code>volume_bridge.py</code> dosyasını çalıştır: <code>python3 volume_bridge.py</code></li>
+                <li>Bu HTML dosyasını bir yerel sunucu ile aç: <code>python3 -m http.server</code> ve
+                    <code>http://127.0.0.1:8000/ses.html</code> adresine git.
+                </li>
+            </ol>
+            <p>Köprü çalışınca "Köprü: Var" ve "Mod: Sistem Sesi" yazacak.</p>
+        </section>
+    </main>
+
+    <!-- MediaPipe Hands (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+    <script src="ses.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+
+</html>
